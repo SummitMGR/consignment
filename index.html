@@ -220,7 +220,7 @@ main { flex: 1; overflow: auto; padding: 22px; }
   // The storage is a Google Apps Script web app on Summit's Google account. Paste its link (ends in /exec) here
   // before uploading this file to GitHub. The access key is NOT in this file: each device enters it once
   // (or opens the setup link ...#k=KEY, which saves it on that device).
-  const API_URL = "PASTE_THE_EXEC_LINK_HERE";
+  const API_URL = "https://script.google.com/macros/library/d/1QnoasnuC_sPJ6s7aJZGVq6QnNOPeGua1bQ2VNyAgoYMfRtntOszdcO4f/3";
   const store = { get: (k) => { try { return localStorage.getItem(k) || ""; } catch (e) { return ""; } },
                   set: (k, v) => { try { v ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch (e) {} } };
   (() => {   // a setup link: #k=KEY (and #a=LINK to use another storage link) is saved on this device, then hidden
