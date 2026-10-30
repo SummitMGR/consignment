@@ -1,0 +1,577 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#155E75">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Consignment Log</title>
+<style>
+:root {
+  /* dark theme */
+  --brand: #1597b8; --brand-deep: #0e5b70; --brand-soft: #0f3a46; --ink: #e7f1f5; --muted: #8fa7b1; --line: #26414c; --paper: #142a33;
+  --bg: #0b1a20; --raise: #1b3640; --green: #34d07a; --green-soft: #133b27; --red: #ff6b6b; --red-soft: #45191c; --amber: #f5b14c; --amber-soft: #3f2e12;
+  --indigo: #7c83ff; --indigo-soft: #23264d;
+  --r: 16px; --shadow: 0 1px 2px rgba(0,0,0,.35), 0 8px 22px rgba(0,0,0,.28);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+[hidden] { display: none !important; }
+input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input[type=number] { -moz-appearance: textfield; }
+html, body { margin: 0; height: 100%; }
+body { font: 16px/1.35 system-ui, "Segoe UI", Roboto, Arial, sans-serif; color: var(--ink); background: var(--bg); overflow: hidden; }
+button { font: inherit; color: inherit; cursor: pointer; }
+input, select { font: inherit; color: inherit; background: var(--raise); }
+input::placeholder { color: var(--muted); }
+#app { display: flex; flex-direction: column; height: 100%; }
+
+/* top bar */
+.top { display: flex; align-items: center; gap: 14px; padding: 14px 22px; background: linear-gradient(120deg, #0a3a47, #0e6a84); border-bottom: 1px solid #1f4a57; color: #fff; flex: none; }
+.top .logo { width: 42px; height: 42px; border-radius: 12px; background: rgba(255,255,255,.18); display: grid; place-items: center; }
+.top .logo svg { width: 26px; height: 26px; }
+.top h1 { font-size: 1.35rem; margin: 0; font-weight: 800; letter-spacing: .01em; }
+.top .sub { font-size: .85rem; opacity: .85; }
+.top .sp { flex: 1; }
+.top .tb { border: 1px solid rgba(255,255,255,.35); background: rgba(255,255,255,.12); color: #fff; border-radius: 12px; padding: 10px 16px; font-weight: 700; display: inline-flex; align-items: center; gap: 8px; }
+.top .tb:hover { background: rgba(255,255,255,.22); }
+.top .tb svg { width: 18px; height: 18px; }
+
+main { flex: 1; overflow: auto; padding: 22px; }
+.wrap { max-width: 1180px; margin: 0 auto; }
+.h2 { font-size: 1.05rem; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin: 26px 2px 12px; }
+
+/* home */
+.actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.action { border: 0; border-radius: 22px; padding: 26px 24px; text-align: left; color: #fff; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 10px; min-height: 170px; transition: transform .12s, box-shadow .12s; }
+.action:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(0,0,0,.45); }
+.action:active { transform: scale(.98); }
+.action .ic { width: 52px; height: 52px; border-radius: 16px; background: rgba(255,255,255,.2); display: grid; place-items: center; }
+.action .ic svg { width: 30px; height: 30px; }
+.action b { font-size: 1.45rem; }
+.action span { opacity: .9; font-size: .95rem; }
+.a-pull { background: linear-gradient(135deg, #0b6f8a, #13a3c6); }
+.a-recv { background: linear-gradient(135deg, #17834a, #26b866); }
+.a-count { background: linear-gradient(135deg, #4b4fd6, #7377ff); }
+
+.stock { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
+.sc { background: var(--paper); border-radius: var(--r); box-shadow: var(--shadow); padding: 16px 18px; border-top: 5px solid var(--c); }
+.sc .nm { font-weight: 800; font-size: 1rem; }
+.sc .big { font-size: 2.6rem; font-weight: 800; line-height: 1.1; margin: 6px 0 2px; color: var(--c); }
+.sc .big small { font-size: .9rem; font-weight: 700; color: var(--muted); margin-left: 4px; }
+.sc .meta { font-size: .8rem; color: var(--muted); }
+.sc .meta b { color: var(--ink); }
+.counted-today { display: inline-flex; align-items: center; gap: 6px; margin-top: 6px; font-size: .78rem; font-weight: 700; padding: 3px 9px; border-radius: 999px; }
+.ok { background: var(--green-soft); color: var(--green); } .bad { background: var(--red-soft); color: var(--red); } .warn { background: var(--amber-soft); color: var(--amber); }
+
+/* screens */
+.screenhead { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+.back { border: 1px solid var(--line); background: var(--paper); border-radius: 12px; padding: 10px 16px; font-weight: 700; display: inline-flex; gap: 8px; align-items: center; }
+.screenhead h2 { margin: 0; font-size: 1.5rem; }
+.screenhead .hint { color: var(--muted); font-size: .92rem; }
+
+/* pull */
+.pull { display: grid; grid-template-columns: 290px 1fr; gap: 20px; align-items: start; }
+.drugs { display: flex; flex-direction: column; gap: 10px; }
+.dbtn { border: 2px solid transparent; background: var(--paper); border-radius: 16px; padding: 16px 16px; text-align: left; box-shadow: var(--shadow); display: flex; align-items: center; gap: 12px; font-weight: 800; font-size: 1.05rem; }
+.dbtn .dot { width: 14px; height: 14px; border-radius: 50%; background: var(--c); flex: none; }
+.dbtn .n { margin-left: auto; min-width: 32px; text-align: center; border-radius: 999px; background: var(--raise); padding: 2px 9px; font-size: .9rem; }
+.dbtn.on { border-color: var(--c); background: var(--c09); }
+.dbtn.on .n { background: var(--c); color: #0b1a20; }
+.scanbox { background: var(--paper); border-radius: 22px; box-shadow: var(--shadow); padding: 22px; }
+.target { border: 3px dashed var(--c55); border-radius: 18px; padding: 26px; text-align: center; background: var(--c06); transition: background .2s; }
+.target.flash { background: var(--c22); }
+.target .big { font-size: 1.6rem; font-weight: 800; }
+.target .big em { font-style: normal; color: var(--c); }
+.target .small { color: var(--muted); margin-top: 6px; }
+.target .typer { margin-top: 14px; display: flex; gap: 8px; justify-content: center; }
+.target input { border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; width: 220px; font-size: 1.1rem; }
+.lnk { border: 0; background: none; color: var(--brand); font-weight: 700; text-decoration: underline; padding: 6px; }
+.batch { margin-top: 18px; display: flex; flex-direction: column; gap: 8px; max-height: 42vh; overflow: auto; }
+.bi { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; animation: pop .25s ease-out; }
+@keyframes pop { from { transform: scale(.97); opacity: 0; } to { transform: none; opacity: 1; } }
+.bi .num { color: var(--muted); font-size: .85rem; width: 26px; text-align: right; }
+.bi .rx { font: 800 1.1rem ui-monospace, Consolas, monospace; }
+.chip { border: 0; border-radius: 999px; padding: 5px 12px; font-weight: 800; font-size: .82rem; color: #0b1a20; background: var(--c); display: inline-flex; gap: 6px; align-items: center; }
+.bi .x { margin-left: auto; border: 0; background: var(--raise); border-radius: 10px; width: 38px; height: 38px; font-size: 1.1rem; color: var(--muted); }
+.empty { text-align: center; color: var(--muted); padding: 22px; }
+.bar { position: sticky; bottom: 0; margin-top: 18px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: var(--paper); border-radius: 18px; box-shadow: 0 -2px 18px rgba(0,0,0,.35); padding: 14px; }
+.bar .tot { display: flex; gap: 8px; flex-wrap: wrap; flex: 1; }
+.btn { border: 0; border-radius: 14px; padding: 15px 24px; font-weight: 800; font-size: 1.05rem; background: var(--brand); color: #fff; box-shadow: var(--shadow); }
+.btn:disabled { opacity: .45; cursor: default; }
+.btn.green { background: #1f9d58; } .btn.indigo { background: #5b5fe0; } .btn.ghost { background: var(--paper); color: var(--ink); border: 1px solid var(--line); box-shadow: none; } .btn.red { background: var(--red); }
+.btn.wide { width: 100%; }
+
+/* receive */
+.grid2 { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.card { background: var(--paper); border-radius: 22px; box-shadow: var(--shadow); padding: 22px; }
+.stepper { display: flex; align-items: center; justify-content: center; gap: 18px; margin: 20px 0; }
+.stepper button { width: 70px; height: 70px; border-radius: 50%; border: 0; font-size: 2rem; font-weight: 800; background: var(--raise); }
+.stepper input { width: 130px; text-align: center; font-size: 2.6rem; font-weight: 800; border: 2px solid var(--line); border-radius: 16px; padding: 6px; }
+.field { width: 100%; border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+
+/* count */
+.crow { display: grid; grid-template-columns: 1.3fr .7fr 1.2fr 1fr; gap: 14px; align-items: center; background: var(--paper); border-radius: 18px; box-shadow: var(--shadow); padding: 16px 18px; border-left: 6px solid var(--c); margin-bottom: 12px; }
+.crow .nm { font-weight: 800; font-size: 1.1rem; }
+.crow .sub { font-size: .8rem; color: var(--muted); margin-top: 3px; }
+.crow .exp { text-align: center; } .crow .exp b { display: block; font-size: 2rem; } .crow .exp span { font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.crow .cin { display: flex; align-items: center; gap: 8px; justify-content: center; }
+.crow .cin button { width: 52px; height: 52px; border-radius: 14px; border: 0; background: var(--raise); font-size: 1.6rem; font-weight: 800; }
+.crow .cin input { width: 90px; text-align: center; font-size: 1.8rem; font-weight: 800; border: 2px solid var(--line); border-radius: 14px; padding: 6px; }
+.crow .st { text-align: center; font-weight: 800; border-radius: 12px; padding: 10px; }
+.crow .more { grid-column: 1 / -1; font-size: .85rem; color: var(--muted); display: flex; gap: 6px; flex-wrap: wrap; }
+.crow .more .rxp { font: 700 .8rem ui-monospace, Consolas, monospace; background: var(--raise); color: var(--ink); border-radius: 8px; padding: 3px 8px; }
+
+/* history */
+.filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+.fbtn { border: 1px solid var(--line); background: var(--paper); border-radius: 999px; padding: 8px 14px; font-weight: 700; }
+.fbtn.on { background: var(--brand); color: #fff; border-color: var(--brand); }
+.fbtn { color: var(--ink); }
+.day { font-weight: 800; color: var(--muted); margin: 18px 4px 8px; }
+.hi { display: flex; gap: 12px; align-items: center; background: var(--paper); border-radius: 14px; padding: 12px 14px; margin-bottom: 6px; box-shadow: var(--shadow); }
+.hi .t { width: 82px; color: var(--muted); font-size: .85rem; font-weight: 700; }
+.hi .ty { font-size: .72rem; font-weight: 800; border-radius: 8px; padding: 3px 8px; text-transform: uppercase; letter-spacing: .04em; }
+.ty-PULL { background: var(--brand-soft); color: var(--brand-deep); } .ty-RECEIVE { background: var(--green-soft); color: var(--green); } .ty-COUNT { background: var(--indigo-soft); color: var(--indigo); } .ty-VOID { background: var(--raise); color: var(--muted); }
+.hi .what { flex: 1; } .hi .what .rx { font: 800 1rem ui-monospace, Consolas, monospace; }
+.hi.voided .what { text-decoration: line-through; opacity: .55; }
+.hi .undo { border: 1px solid var(--line); background: var(--raise); border-radius: 10px; padding: 7px 12px; font-weight: 700; font-size: .85rem; color: var(--muted); }
+
+/* drugs */
+.drow { display: grid; grid-template-columns: 34px 1.6fr 1fr 110px 110px 92px; gap: 10px; align-items: center; background: var(--paper); border-radius: 14px; padding: 10px 12px; margin-bottom: 8px; box-shadow: var(--shadow); }
+.drow input, .drow select { border: 1px solid var(--line); border-radius: 10px; padding: 9px 10px; width: 100%; }
+.drow .mv { display: flex; gap: 4px; } .drow .mv button { border: 1px solid var(--line); background: var(--raise); color: var(--ink); border-radius: 8px; width: 42px; height: 38px; }
+
+/* step guide at the top of each screen: what to do, in order */
+.steps { display: flex; gap: 10px; margin: -4px 0 18px; flex-wrap: wrap; }
+.step { display: flex; align-items: center; gap: 10px; background: var(--paper); border: 2px solid var(--line); border-radius: 14px; padding: 10px 16px; font-weight: 800; font-size: 1.02rem; color: var(--muted); }
+.step .no { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--raise); color: var(--muted); font-size: .95rem; }
+.step.now { border-color: var(--brand); color: var(--ink); box-shadow: 0 0 0 4px rgba(21,151,184,.18); }
+.step.now .no { background: var(--brand); color: #fff; }
+.step.ok { color: var(--ink); } .step.ok .no { background: #1f9d58; color: #fff; }
+.btn { min-height: 56px; }
+.btn.big { font-size: 1.2rem; padding: 18px 30px; }
+
+/* dialogs + toast */
+.scrim { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: grid; place-items: center; z-index: 50; padding: 20px; animation: fade .15s; }
+@keyframes fade { from { opacity: 0; } }
+.dlg { background: var(--paper); border-radius: 24px; max-width: 620px; width: 100%; max-height: 90vh; overflow: auto; padding: 26px; box-shadow: 0 30px 80px rgba(0,0,0,.3); animation: up .2s ease-out; }
+@keyframes up { from { transform: translateY(14px); opacity: 0; } }
+.dlg h3 { margin: 0 0 8px; font-size: 1.4rem; }
+.dlg p { color: var(--muted); margin: 0 0 14px; }
+.dlg .btns { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; flex-wrap: wrap; }
+.tbl { width: 100%; border-collapse: collapse; margin-top: 8px; }
+.tbl td, .tbl th { padding: 10px 8px; border-bottom: 1px solid var(--line); text-align: left; }
+.tbl th { font-size: .78rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.tbl td.r, .tbl th.r { text-align: right; }
+.stamp { display: inline-flex; gap: 8px; align-items: center; background: var(--green-soft); color: var(--green); font-weight: 800; border-radius: 12px; padding: 10px 14px; margin: 6px 0 4px; }
+.bigcheck { width: 76px; height: 76px; border-radius: 50%; background: #1f9d58; color: #fff; display: grid; place-items: center; margin: 4px auto 14px; }
+.bigcheck svg { width: 42px; height: 42px; }
+#toast { position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%); background: #e7f1f5; color: #0b1a20; padding: 12px 20px; border-radius: 14px; font-weight: 700; z-index: 60; box-shadow: var(--shadow); }
+.loading { display: grid; place-items: center; height: 60vh; color: var(--muted); font-weight: 700; }
+.spin { width: 38px; height: 38px; border: 4px solid var(--brand-soft); border-top-color: var(--brand); border-radius: 50%; animation: sp 0.8s linear infinite; margin: 0 auto 12px; }
+@keyframes sp { to { transform: rotate(360deg); } }
+
+@media (max-width: 860px) {
+  .actions { grid-template-columns: 1fr; } .action { min-height: 120px; }
+  .pull { grid-template-columns: 1fr; } .drugs { display: grid; grid-template-columns: repeat(2, 1fr); }
+  .crow { grid-template-columns: 1fr 1fr; } .drow { grid-template-columns: 1fr 1fr; }
+  .top .tb span { display: none; }
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="top">
+    <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="12" cy="12" r="4"/><path d="M12 8v1M12 15v1M8 12h1M15 12h1M3 8H1.5M3 16H1.5"/></svg></div>
+    <div><h1>Consignment Log</h1><div class="sub" id="clock"></div></div>
+    <div class="sp"></div>
+    <button class="tb" id="bFull" hidden title="Full screen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3"/></svg><span>Full screen</span></button>
+    <button class="tb" id="bHome" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span>Home</span></button>
+    <button class="tb" id="bHist"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>History</span></button>
+    <button class="tb" id="bDrugs" title="Drug list"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span>Drugs</span></button>
+  </div>
+  <main><div class="wrap" id="view"><div class="loading"><div><div class="spin"></div>Loading…</div></div></div></main>
+</div>
+<div id="toast" hidden></div>
+
+<script>
+(() => {
+  const COLORS = ["#22b8d8", "#a78bfa", "#f472b6", "#fb923c", "#4ade80", "#60a5fa", "#fbbf24", "#2dd4bf", "#c084fc", "#fb7185"];
+  const $ = (id) => document.getElementById(id);
+  function el(tag, props, ...kids) {
+    const n = document.createElement(tag);
+    for (const [k, v] of Object.entries(props || {})) {
+      if (k === "text") n.textContent = v; else if (k === "class") n.className = v; else if (k === "style" && typeof v === "object") { for (const [sk, sv] of Object.entries(v)) sk.startsWith("--") ? n.style.setProperty(sk, sv) : (n.style[sk] = sv); }
+      else if (k.startsWith("on")) n.addEventListener(k.slice(2), v); else if (v !== undefined && v !== null && v !== false) n.setAttribute(k, v === true ? "" : v);
+    }
+    for (const c of kids.flat(Infinity)) if (c != null && c !== false) n.append(c.nodeType ? c : document.createTextNode(String(c)));
+    return n;
+  }
+  const svg = (d, size) => { const s = document.createElementNS("http://www.w3.org/2000/svg", "svg"); s.setAttribute("viewBox", "0 0 24 24"); s.setAttribute("fill", "none"); s.setAttribute("stroke", "currentColor"); s.setAttribute("stroke-width", "2.2"); s.setAttribute("stroke-linecap", "round"); s.setAttribute("stroke-linejoin", "round"); if (size) { s.style.width = size; s.style.height = size; } s.innerHTML = d; return s; };
+  const I = {
+    pull: '<path d="M12 3v12M7 10l5 5 5-5"/><rect x="4" y="17" width="16" height="4" rx="1"/>',
+    recv: '<path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/>',
+    count: '<path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
+    check: '<path d="M5 12l5 5 9-10"/>',
+    back: '<path d="M15 18l-6-6 6-6"/>',
+  };
+
+  // ---------------------------------------------------------------- server
+  // The storage is a Google Apps Script web app on Summit's Google account. Paste its link (ends in /exec) here
+  // before uploading this file to GitHub. The access key is NOT in this file: each device enters it once
+  // (or opens the setup link ...#k=KEY, which saves it on that device).
+  const API_URL = "PASTE_THE_EXEC_LINK_HERE";
+  const store = { get: (k) => { try { return localStorage.getItem(k) || ""; } catch (e) { return ""; } },
+                  set: (k, v) => { try { v ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch (e) {} } };
+  (() => {   // a setup link: #k=KEY (and #a=LINK to use another storage link) is saved on this device, then hidden
+    const h = new URLSearchParams(location.hash.slice(1));
+    if (h.get("k")) store.set("cl-key", h.get("k").trim());
+    if (h.get("a")) store.set("cl-api", h.get("a").trim());
+    if (location.hash) try { window.history.replaceState(null, "", location.pathname + location.search); } catch (e) {}
+  })();
+  const apiUrl = () => store.get("cl-api") || (API_URL.startsWith("https://") ? API_URL : "");
+  async function api(fn, ...args) {
+    const key = store.get("cl-key");
+    if (!key || !apiUrl()) { needKey(); throw new Error("This device needs the pharmacy access key."); }
+    let r;
+    try { r = await fetch(apiUrl(), { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ key, fn, args }) }); }
+    catch (e) { throw new Error("Can't reach the log. Check the internet connection and try again."); }
+    let j; try { j = await r.json(); } catch (e) { throw new Error("The log answered strangely (" + r.status + "). Try again."); }
+    if (j.error === "key") { store.set("cl-key", ""); needKey(true); throw new Error("Wrong access key."); }
+    if (j.error) throw new Error(j.message || "Something went wrong.");
+    return j.result;
+  }
+  // first use on a device: the access key (kept on this device only)
+  function needKey(wrong) {
+    if (document.querySelector(".scrim.keyask")) return;
+    const inp = el("input", { class: "field", placeholder: "Access key", autocomplete: "off", style: { fontSize: "1.3rem", textAlign: "center", letterSpacing: ".08em", textTransform: "uppercase" } });
+    const save = () => { const v = inp.value.trim().toUpperCase(); if (!v) return; store.set("cl-key", v); scrim.remove(); load(); };
+    inp.addEventListener("keydown", (e) => { if (e.key === "Enter") save(); });
+    const scrim = el("div", { class: "scrim keyask" }, el("div", { class: "dlg" }, el("h3", { text: wrong ? "That key didn't work" : "Set up this device" }),
+      el("p", { text: !apiUrl() ? "This page doesn't have its storage link yet (API_URL in index.html)." : "Type the pharmacy access key once. This device remembers it." }),
+      apiUrl() ? inp : null, el("div", { class: "btns" }, apiUrl() ? el("button", { class: "btn", text: "Save", onclick: save }) : null)));
+    document.body.append(scrim);
+    setTimeout(() => inp.focus(), 50);
+  }
+  function toast(t, ms) { const n = $("toast"); n.textContent = t; n.hidden = false; clearTimeout(toast.h); toast.h = setTimeout(() => n.hidden = true, ms || 3200); }
+
+  let S = null, screen = "home";
+  const color = (id) => { const i = (S ? S.drugs.findIndex(d => d.id === id) : 0); return COLORS[(i < 0 ? 0 : i) % COLORS.length]; };
+  // a drug's color and its light tints (8-digit hex works in every browser, including the Fire tablet's)
+  const cs = (c) => ({ "--c": c, "--c09": c + "17", "--c55": c + "8C", "--c06": c + "10", "--c22": c + "38" });
+  const drugOf = (id) => S.drugs.find(d => d.id === id);
+  const active = () => S.drugs.filter(d => d.active);
+  const unit = (d, n) => (d.unit === "box" ? "box" : "bottle") + (n === 1 ? "" : (d.unit === "box" ? "es" : "s"));
+  const fmtTime = (t) => new Date(t).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  const fmtDay = (t) => { const d = new Date(t), now = new Date(); const y = new Date(now); y.setDate(now.getDate() - 1);
+    if (d.toDateString() === now.toDateString()) return "Today"; if (d.toDateString() === y.toDateString()) return "Yesterday";
+    return d.toLocaleDateString([], { weekday: "long", month: "short", day: "numeric" }); };
+  const fmtWhen = (t) => fmtDay(t) + " " + fmtTime(t);
+
+  async function load(quiet) {
+    try { S = await api("getState"); if (!quiet || screen === "home" || screen === "history") render(); }
+    catch (e) { if (document.querySelector(".scrim.keyask")) return; $("view").replaceChildren(el("div", { class: "loading" }, el("div", {}, el("b", { text: "Couldn't load" }), el("div", { text: e.message }), el("div", { style: { marginTop: "14px" } }, el("button", { class: "btn", text: "Try again", onclick: () => load() }))))); }
+  }
+  setInterval(() => { if (screen === "home" || screen === "history") load(true); }, 60000);
+  setInterval(() => { $("clock").textContent = new Date().toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" }) + " · " + new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }); }, 1000);
+
+  function go(s) {
+    if (screen === "pull" && batch.length && s !== "pull" && !confirm("You have " + batch.length + " scan(s) not logged yet. Leave without logging them?")) return;
+    if (screen === "pull" && s !== "pull") batch = [];
+    screen = s; render(); $("view").parentElement.scrollTop = 0;
+  }
+  // full screen (no address bar): the first tap on a touch screen asks for it, and again after the tablet comes back
+  // from sleep or another app; the button does the same anywhere
+  const fsOk = !!(document.fullscreenEnabled || document.webkitFullscreenEnabled);
+  const isFull = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
+  const goFull = () => { const d = document.documentElement; try { const p = (d.requestFullscreen || d.webkitRequestFullscreen).call(d); if (p && p.catch) p.catch(() => {}); } catch (e) {} };
+  const showFsBtn = () => { $("bFull").hidden = !fsOk || isFull(); };
+  $("bFull").onclick = goFull;
+  document.addEventListener("fullscreenchange", showFsBtn); document.addEventListener("webkitfullscreenchange", showFsBtn);
+  if (fsOk && window.matchMedia && matchMedia("(pointer: coarse)").matches)
+    document.addEventListener("pointerdown", () => { if (!isFull()) goFull(); }, true);
+  showFsBtn();
+  $("bHome").onclick = () => go("home"); $("bHist").onclick = () => go("history"); $("bDrugs").onclick = () => go("drugs");
+
+  function render() {
+    if (!S) return;
+    $("bHome").hidden = screen === "home";
+    const v = $("view"); v.textContent = "";
+    ({ home, pull, receive, count, history, drugs })[screen](v);
+  }
+  // the numbered guide: [label, state] with state "ok" (done), "now" (do this) or "" (later)
+  const steps = (list) => el("div", { class: "steps" }, list.map(([t, st], i) =>
+    el("div", { class: "step " + (st || "") }, el("span", { class: "no", text: st === "ok" ? "✓" : String(i + 1) }), t)));
+  const head = (title, hint) => el("div", { class: "screenhead" },
+    el("button", { class: "back", onclick: () => go("home") }, svg(I.back, "18px"), "Home"),
+    el("div", {}, el("h2", { text: title }), hint ? el("div", { class: "hint", text: hint }) : null));
+
+  // ---------------------------------------------------------------- home
+  function home(v) {
+    v.append(el("div", { class: "actions" },
+      el("button", { class: "action a-pull", onclick: () => go("pull") }, el("div", { class: "ic" }, svg(I.pull)), el("b", { text: "Pull from safe" }), el("span", { text: "Scan the Rx labels, check the list, log it" })),
+      el("button", { class: "action a-recv", onclick: () => go("receive") }, el("div", { class: "ic" }, svg(I.recv)), el("b", { text: "Receive inventory" }), el("span", { text: "New stock put in the safe" })),
+      el("button", { class: "action a-count", onclick: () => go("count") }, el("div", { class: "ic" }, svg(I.count)), el("b", { text: "End-of-day count" }), el("span", { text: "Count the safe and compare" }))));
+    v.append(el("div", { class: "h2", text: "In the safe now" }));
+    const g = el("div", { class: "stock" });
+    const today = new Date().toDateString();
+    for (const d of active()) {
+      const c = d.lastCount, countedToday = c && new Date(c.time).toDateString() === today;
+      g.append(el("div", { class: "sc", style: cs(color(d.id)) },
+        el("div", { class: "nm", text: d.short }),
+        el("div", { class: "big" }, d.onHand === null ? "—" : String(d.onHand), el("small", { text: d.onHand === null ? "count to start" : unit(d, d.onHand) })),
+        el("div", { class: "meta" }, c ? ["Last count ", el("b", { text: fmtWhen(c.time) })] : "Not counted yet"),
+        el("div", { class: "meta" }, `Pulled ${d.pulled} · received ${d.received} since`),
+        countedToday ? el("span", { class: "counted-today " + (c.diff ? "bad" : "ok"), text: c.diff ? `Today's count was off by ${c.diff > 0 ? "+" : ""}${c.diff}` : "Counted today ✓" }) : null));
+    }
+    v.append(g);
+  }
+
+  // ---------------------------------------------------------------- pull (scan, review, confirm)
+  let batch = [], pick = null, batchId = null, typing = false;
+  function pull(v) {
+    const list = active();
+    if (!pick || !list.some(d => d.id === pick)) pick = list[0] && list[0].id;
+    if (!batchId) batchId = "b" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    v.append(head("Pull from safe", "Nothing is saved until you press Review & log, then Confirm."));
+    v.append(steps([["Tap the drug on the left", "ok"], ["Scan each Rx label", batch.length ? "ok" : "now"], ["Press Review & log", batch.length ? "now" : ""]]));
+    const d = drugOf(pick), c = color(pick);
+    const drugsCol = el("div", { class: "drugs" }, list.map(x => el("button", { class: "dbtn" + (x.id === pick ? " on" : ""), style: cs(color(x.id)), onclick: () => { pick = x.id; render(); } },
+      el("span", { class: "dot" }), x.short, el("span", { class: "n", text: batch.filter(b => b.drugId === x.id).length }))));
+    const typer = el("input", { id: "typer", placeholder: "Rx number", inputmode: "numeric", autocomplete: "off",
+      onkeydown: (e) => { if (e.key === "Enter") { e.preventDefault(); const t = e.target.value; e.target.value = ""; scanned(t); } } });
+    const target = el("div", { class: "target", id: "target", style: cs(c) },
+      el("div", { class: "big" }, "Scan Rx labels for ", el("em", { text: d ? d.short : "" })),
+      el("div", { class: "small", text: "Each scan = 1 " + (d ? unit(d, 1) : "unit") + " out of the safe" }),
+      typing ? el("div", { class: "typer" }, typer, el("button", { class: "btn", text: "Add", onclick: () => { const t = typer.value; typer.value = ""; scanned(t); typer.focus(); } }))
+             : el("button", { class: "lnk", text: "No scanner? Type the Rx number", onclick: () => { typing = true; render(); setTimeout(() => $("typer") && $("typer").focus(), 50); } }));
+    const items = el("div", { class: "batch" });
+    if (!batch.length) items.append(el("div", { class: "empty", text: "Scanned labels show up here." }));
+    batch.slice().reverse().forEach((b, i) => {
+      const n = batch.length - i, dd = drugOf(b.drugId);
+      items.append(el("div", { class: "bi" }, el("span", { class: "num", text: n }), el("span", { class: "rx", text: b.rx }),
+        el("button", { class: "chip", style: cs(color(b.drugId)), title: "Wrong drug? Tap to change it", onclick: () => changeDrug(b) }, dd ? dd.short : b.drugId, " ▾"),
+        el("button", { class: "x", title: "Remove this scan", onclick: () => { batch = batch.filter(x => x !== b); render(); } }, "✕")));
+    });
+    const tot = el("div", { class: "tot" }, list.filter(x => batch.some(b => b.drugId === x.id)).map(x =>
+      el("span", { class: "chip", style: cs(color(x.id)), text: `${x.short}: ${batch.filter(b => b.drugId === x.id).length}` })));
+    v.append(el("div", { class: "pull" }, drugsCol, el("div", {}, el("div", { class: "scanbox" }, target, items),
+      el("div", { class: "bar" }, tot, el("button", { class: "btn ghost", text: "Clear", disabled: !batch.length, onclick: () => { if (confirm("Remove all " + batch.length + " scans?")) { batch = []; render(); } } }),
+        el("button", { class: "btn big", disabled: !batch.length, onclick: review }, `Review & log (${batch.length})`)))));
+  }
+
+  // a barcode scanner types the Rx number and presses Enter: caught anywhere on the Pull screen (no box to tap first)
+  let buf = "", bufAt = 0;
+  document.addEventListener("keydown", (e) => {
+    if (screen !== "pull" || document.querySelector(".scrim")) return;
+    const t = e.target; if (t && (t.tagName === "INPUT" || t.tagName === "SELECT" || t.tagName === "TEXTAREA")) return;
+    const now = Date.now(); if (now - bufAt > 800) buf = ""; bufAt = now;
+    if (e.key === "Enter") { if (buf.trim().length >= 3) { e.preventDefault(); scanned(buf); } buf = ""; return; }
+    if (e.key.length === 1) buf += e.key;
+  });
+
+  async function scanned(raw) {
+    const rx = String(raw || "").trim().toUpperCase().replace(/\s+/g, "");
+    if (rx.length < 3) return;
+    const d = drugOf(pick); if (!d) return;
+    // the same label again (in this batch, or logged in the last 7 days): ask first
+    const inBatch = batch.filter(b => b.rx === rx);
+    const logged = (S.history || []).filter(h => h.type === "PULL" && !h.voided && h.rx === rx);
+    if (inBatch.length || logged.length) {
+      const where = [...inBatch.map(b => (drugOf(b.drugId) || {}).short + " (in this list)"), ...logged.slice(0, 3).map(h => h.drug + " (logged " + fmtWhen(h.time) + ")")];
+      const yes = await ask("Same label scanned again", `Rx ${rx} was already scanned: ${where.join(", ")}.`, "Yes, pull another one", "No, skip it",
+        "Only say yes if this prescription really needed another " + unit(d, 1) + ".");
+      if (!yes) { toast("Skipped Rx " + rx); return; }
+    }
+    batch.push({ rx, drugId: d.id });
+    render();
+    const t = $("target"); if (t) { t.classList.add("flash"); setTimeout(() => t.classList.remove("flash"), 250); }
+  }
+
+  function changeDrug(b) {
+    const body = el("div", { class: "grid2" }, active().map(x => el("button", { class: "dbtn" + (x.id === b.drugId ? " on" : ""), style: cs(color(x.id)),
+      onclick: () => { b.drugId = x.id; close(); render(); toast("Rx " + b.rx + " moved to " + x.short); } }, el("span", { class: "dot" }), x.short)));
+    const close = dialog("Which drug is Rx " + b.rx + "?", "Tap the right one.", body, [["Cancel", "ghost", () => true]]);
+  }
+
+  function review() {
+    const list = active().filter(x => batch.some(b => b.drugId === x.id));
+    const tbl = el("table", { class: "tbl" }, el("tr", {}, el("th", { text: "Drug" }), el("th", { text: "Rx numbers" }), el("th", { class: "r", text: "Pulled" })),
+      list.map(x => { const rs = batch.filter(b => b.drugId === x.id);
+        return el("tr", {}, el("td", {}, el("span", { class: "chip", style: cs(color(x.id)), text: x.short })), el("td", { style: { fontFamily: "ui-monospace,Consolas,monospace", fontSize: ".9rem" }, text: rs.map(r => r.rx).join(", ") }),
+          el("td", { class: "r" }, el("b", { text: rs.length + " " + unit(x, rs.length) }))); }));
+    dialog("Check before logging", "Make sure every label is under the right drug. Tap Back to fix anything.", tbl,
+      [["Back", "ghost", () => true], [`Confirm & log ${batch.length}`, "", async (btn) => {
+        btn.disabled = true; btn.textContent = "Logging…";
+        try {
+          const r = await api("logPulls", batchId, batch.map(b => ({ drugId: b.drugId, rx: b.rx })));
+          const n = batch.length; batch = []; batchId = null; typing = false; screen = "home";
+          await load();
+          done("Logged " + n + " " + (n === 1 ? "pull" : "pulls"), r.time);
+          return true;
+        } catch (e) { btn.disabled = false; btn.textContent = "Try again"; toast(e.message, 6000); return false; }
+      }]]);
+  }
+
+  // ---------------------------------------------------------------- receive
+  let rDrug = null, rQty = 1;
+  function receive(v) {
+    v.append(head("Receive inventory", "Any time of day. It's counted in the next end-of-day count."));
+    v.append(steps([["Tap the drug", "ok"], ["Set how many came in", "now"], ["Press the green Receive button", ""]]));
+    const list = active(); if (!rDrug || !list.some(d => d.id === rDrug)) rDrug = list[0] && list[0].id;
+    const d = drugOf(rDrug);
+    const qty = el("input", { type: "number", min: "1", value: rQty, inputmode: "numeric", oninput: (e) => { rQty = Math.max(0, parseInt(e.target.value) || 0); btn.textContent = label(); btn.disabled = rQty < 1; } });
+    const note = el("input", { class: "field", placeholder: "Note (optional): invoice #, lot, who delivered…" });
+    const label = () => `Receive ${rQty} ${unit(d, rQty)} of ${d.short}`;
+    const btn = el("button", { class: "btn green wide big", disabled: rQty < 1, onclick: async () => {
+      if (!(await ask("Receive " + rQty + " " + unit(d, rQty) + "?", d.name + " goes into the safe count now.", "Yes, receive", "Cancel"))) return;
+      btn.disabled = true; btn.textContent = "Saving…";
+      try { const r = await api("receive", d.id, rQty, note.value); rQty = 1; screen = "home"; await load(); done("Received " + d.short, r.time); }
+      catch (e) { btn.disabled = false; btn.textContent = label(); toast(e.message, 6000); }
+    } }, label());
+    v.append(el("div", { class: "card" },
+      el("div", { class: "grid2" }, list.map(x => el("button", { class: "dbtn" + (x.id === rDrug ? " on" : ""), style: cs(color(x.id)), onclick: () => { rDrug = x.id; render(); } }, el("span", { class: "dot" }), x.short))),
+      el("div", { class: "stepper" }, el("button", { text: "−", onclick: () => { rQty = Math.max(1, rQty - 1); qty.value = rQty; btn.textContent = label(); } }), qty,
+        el("button", { text: "+", onclick: () => { rQty++; qty.value = rQty; btn.textContent = label(); btn.disabled = false; } })),
+      el("div", { style: { textAlign: "center", color: "var(--muted)", marginTop: "-8px", marginBottom: "16px" }, text: unit(d, 2) + " (1 scan = 1 " + unit(d, 1) + ")" }),
+      note, el("div", { style: { height: "16px" } }), btn));
+  }
+
+  // ---------------------------------------------------------------- end-of-day count
+  let counts = {};
+  function count(v) {
+    v.append(head("End-of-day count", "Expected = last count + received − pulled."));
+    v.append(steps([["Count each drug in the safe", "now"], ["Type the number (or use − / +)", "now"], ["Press Review & save count", ""]]));
+    const list = active();
+    for (const d of list) {
+      const c = color(d.id), val = counts[d.id];
+      const st = el("div", { class: "st" });
+      const setSt = () => {
+        const n = counts[d.id];
+        if (n === undefined || n === "") { st.className = "st warn"; st.textContent = "Not counted"; return; }
+        if (d.onHand === null) { st.className = "st ok"; st.textContent = "First count: sets the start"; return; }
+        const diff = n - d.onHand;
+        st.className = "st " + (diff ? "bad" : "ok"); st.textContent = diff ? `Off by ${diff > 0 ? "+" : ""}${diff}` : "Matches ✓";
+      };
+      const inp = el("input", { type: "number", min: "0", inputmode: "numeric", value: val === undefined ? "" : val, placeholder: "?",
+        oninput: (e) => { counts[d.id] = e.target.value === "" ? "" : Math.max(0, parseInt(e.target.value) || 0); setSt(); } });
+      const bump = (k) => { const n = (counts[d.id] === undefined || counts[d.id] === "") ? (d.onHand ?? 0) : counts[d.id]; counts[d.id] = Math.max(0, n + k); inp.value = counts[d.id]; setSt(); };
+      setSt();
+      v.append(el("div", { class: "crow", style: cs(c) },
+        el("div", {}, el("div", { class: "nm", text: d.short }), el("div", { class: "sub", text: d.lastCount ? "Last count " + fmtWhen(d.lastCount.time) + ": " + d.lastCount.counted : "No count yet" })),
+        el("div", { class: "exp" }, el("b", { text: d.onHand === null ? "—" : d.onHand }), el("span", { text: "expected" })),
+        el("div", { class: "cin" }, el("button", { text: "−", onclick: () => bump(-1) }), inp, el("button", { text: "+", onclick: () => bump(1) })),
+        st,
+        (d.pulls.length || d.receives.length) ? el("div", { class: "more" }, d.pulls.length ? ["Pulled since last count (" + d.pulled + "):", d.pulls.map(p => el("span", { class: "rxp", title: fmtWhen(p.time), text: p.rx }))] : null,
+          d.receives.length ? el("span", { text: " · Received " + d.received }) : null) : null));
+    }
+    const missing = () => list.filter(d => counts[d.id] === undefined || counts[d.id] === "");
+    v.append(el("div", { class: "bar" }, el("div", { class: "tot", style: { color: "var(--muted)" }, text: "Every drug needs a count before saving." }),
+      el("button", { class: "btn indigo big", onclick: async () => {
+        const m = missing(); if (m.length) { toast("Count " + m.map(d => d.short).join(", ") + " first.", 4500); return; }
+        const off = list.filter(d => d.onHand !== null && counts[d.id] - d.onHand !== 0);
+        const body = el("table", { class: "tbl" }, el("tr", {}, el("th", { text: "Drug" }), el("th", { class: "r", text: "Expected" }), el("th", { class: "r", text: "Counted" }), el("th", { class: "r", text: "" })),
+          list.map(d => { const diff = d.onHand === null ? null : counts[d.id] - d.onHand;
+            return el("tr", {}, el("td", { text: d.short }), el("td", { class: "r", text: d.onHand ?? "—" }), el("td", { class: "r" }, el("b", { text: counts[d.id] })),
+              el("td", { class: "r" }, el("span", { class: "counted-today " + (diff ? "bad" : "ok"), text: diff === null ? "start" : diff ? (diff > 0 ? "+" : "") + diff : "✓" }))); }));
+        dialog(off.length ? off.length + " drug(s) don't match" : "Everything matches", off.length ? "It's saved as counted, with the difference, so it can be checked against the dispensing records." : "Save the count?", body,
+          [["Back", "ghost", () => true], ["Save count", "indigo", async (btn) => {
+            btn.disabled = true; btn.textContent = "Saving…";
+            try {
+              const r = await api("submitCount", list.map(d => ({ drugId: d.id, counted: counts[d.id] })), "c" + Date.now().toString(36));
+              counts = {}; screen = "home"; await load();
+              done(off.length ? "Count saved, " + off.length + " off" : "Count saved, all match", r.time, r.results);
+              return true;
+            } catch (e) { btn.disabled = false; btn.textContent = "Try again"; toast(e.message, 6000); return false; }
+          }]]);
+      } }, "Review & save count")));
+  }
+
+  // ---------------------------------------------------------------- history (7 days)
+  let hType = "all", hDrug = "", hRx = "";
+  function history(v) {
+    v.append(head("History", "The last 7 days. Undo a scan or receipt logged by mistake (it stays here, crossed out)."));
+    const types = [["all", "Everything"], ["PULL", "Pulls"], ["RECEIVE", "Received"], ["COUNT", "Counts"]];
+    const search = el("input", { class: "field", style: { maxWidth: "220px" }, placeholder: "Find an Rx number", value: hRx, inputmode: "numeric",
+      oninput: (e) => { hRx = e.target.value.trim().toUpperCase(); draw(); } });
+    const sel = el("select", { class: "field", style: { maxWidth: "200px" }, onchange: (e) => { hDrug = e.target.value; draw(); } },
+      el("option", { value: "", text: "All drugs" }), S.drugs.map(d => el("option", { value: d.id, text: d.short, selected: hDrug === d.id })));
+    v.append(el("div", { class: "filters" }, types.map(([k, n]) => el("button", { class: "fbtn" + (hType === k ? " on" : ""), onclick: () => { hType = k; render(); } }, n)), sel, search));
+    const out = el("div"); v.append(out);
+    function draw() {
+      out.textContent = "";
+      const rows = S.history.filter(h => h.type !== "VOID" && (hType === "all" || h.type === hType) && (!hDrug || h.drugId === hDrug) && (!hRx || h.rx.includes(hRx)));
+      if (!rows.length) { out.append(el("div", { class: "empty", text: "Nothing here." })); return; }
+      let day = "";
+      for (const h of rows) {
+        const dd = fmtDay(h.time); if (dd !== day) { day = dd; out.append(el("div", { class: "day", text: dd })); }
+        const what = h.type === "PULL" ? [el("span", { class: "chip", style: cs(color(h.drugId)), text: h.drug }), " ", el("span", { class: "rx", text: h.rx })]
+          : h.type === "RECEIVE" ? [el("span", { class: "chip", style: cs(color(h.drugId)), text: h.drug }), ` +${h.qty} received` + (h.note ? " · " + h.note : "")]
+          : [el("span", { class: "chip", style: cs(color(h.drugId)), text: h.drug }), ` counted ${h.counted}` + (h.expected === null ? " (first count)" : ` · expected ${h.expected} `),
+             h.expected === null ? null : el("span", { class: "counted-today " + (h.diff ? "bad" : "ok"), text: h.diff ? (h.diff > 0 ? "+" : "") + h.diff : "match" })];
+        out.append(el("div", { class: "hi" + (h.voided ? " voided" : "") }, el("span", { class: "t", text: fmtTime(h.time) }), el("span", { class: "ty ty-" + h.type, text: h.type === "PULL" ? "Pulled" : h.type === "RECEIVE" ? "Received" : "Count" }),
+          el("div", { class: "what" }, what),
+          (h.type === "PULL" || h.type === "RECEIVE") && !h.voided ? el("button", { class: "undo", onclick: async () => {
+            if (!(await ask("Undo this " + (h.type === "PULL" ? "scan" : "receipt") + "?", h.drug + (h.rx ? " · Rx " + h.rx : " · " + h.qty) + " · " + fmtWhen(h.time), "Yes, undo", "Cancel"))) return;
+            try { await api("voidEntry", h.id); toast("Undone."); await load(); } catch (e) { toast(e.message, 6000); }
+          } }, "Undo") : h.voided ? el("span", { class: "t", text: "undone" }) : null));
+      }
+    }
+    draw();
+  }
+
+  // ---------------------------------------------------------------- drug list
+  let edit = null;
+  function drugs(v) {
+    v.append(head("Drugs in the safe", "Add a drug, rename it, or hide one you no longer keep. Hidden drugs keep their history."));
+    if (!edit) edit = S.drugs.map(d => ({ id: d.id, name: d.name, short: d.short, unit: d.unit, active: d.active }));
+    edit.forEach((d, i) => v.append(el("div", { class: "drow" },
+      el("span", { class: "dot", style: { width: "16px", height: "16px", borderRadius: "50%", background: COLORS[i % COLORS.length] } }),
+      el("input", { value: d.name, placeholder: "Full name", oninput: (e) => d.name = e.target.value }),
+      el("input", { value: d.short, placeholder: "Short name", oninput: (e) => d.short = e.target.value }),
+      el("select", { onchange: (e) => d.unit = e.target.value }, el("option", { value: "bottle", text: "Bottles", selected: d.unit !== "box" }), el("option", { value: "box", text: "Boxes", selected: d.unit === "box" })),
+      el("select", { onchange: (e) => d.active = e.target.value === "1" }, el("option", { value: "1", text: "Shown", selected: d.active }), el("option", { value: "0", text: "Hidden", selected: !d.active })),
+      el("div", { class: "mv" }, el("button", { text: "↑", disabled: i === 0, onclick: () => { [edit[i - 1], edit[i]] = [edit[i], edit[i - 1]]; render(); } }),
+        el("button", { text: "↓", disabled: i === edit.length - 1, onclick: () => { [edit[i + 1], edit[i]] = [edit[i], edit[i + 1]]; render(); } })))));
+    v.append(el("div", { class: "bar" }, el("button", { class: "btn ghost", text: "+ Add a drug", onclick: () => { edit.push({ id: "", name: "", short: "", unit: "bottle", active: true }); render(); } }),
+      el("div", { class: "tot" }), el("button", { class: "btn ghost", text: "Cancel", onclick: () => { edit = null; go("home"); } }),
+      el("button", { class: "btn", text: "Save drug list", onclick: async (e) => {
+        e.target.disabled = true;
+        try { await api("saveDrugs", edit); edit = null; toast("Drug list saved."); screen = "home"; await load(); }
+        catch (err) { e.target.disabled = false; toast(err.message, 6000); }
+      } })));
+  }
+
+  // ---------------------------------------------------------------- dialogs
+  function dialog(title, text, body, buttons) {
+    const scrim = el("div", { class: "scrim" });
+    const close = () => scrim.remove();
+    const btns = el("div", { class: "btns" }, buttons.map(([label, kind, fn]) => {
+      const b = el("button", { class: "btn " + kind, text: label });
+      b.onclick = async () => { if ((await fn(b)) !== false) close(); };
+      return b;
+    }));
+    scrim.append(el("div", { class: "dlg" }, el("h3", { text: title }), text ? el("p", { text }) : null, body, btns));
+    document.body.append(scrim);
+    setTimeout(() => { const last = btns.lastElementChild; last && last.focus(); }, 30);
+    return close;
+  }
+  function ask(title, text, yes, no, extra) {
+    return new Promise((res) => dialog(title, text, extra ? el("p", { text: extra, style: { fontSize: ".9rem" } }) : null,
+      [[no, "ghost", () => { res(false); return true; }], [yes, "", () => { res(true); return true; }]]));
+  }
+  function done(title, time, results) {
+    const body = el("div", { style: { textAlign: "center" } }, el("div", { class: "bigcheck" }, svg(I.check)),
+      el("div", { class: "stamp", text: "Confirmed " + fmtDay(time).toLowerCase().replace(/^(?!today|yesterday)/, "") + " at " + new Date(time).toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" }) }),
+      results && results.length ? el("table", { class: "tbl", style: { marginTop: "14px" } }, results.map(r => el("tr", {}, el("td", { text: r.drug }),
+        el("td", { class: "r", text: (r.expected === null ? "start " : "expected " + r.expected + " · ") + "counted " + r.counted }),
+        el("td", { class: "r" }, el("span", { class: "counted-today " + (r.diff ? "bad" : "ok"), text: r.diff === null ? "start" : r.diff ? (r.diff > 0 ? "+" : "") + r.diff : "✓" }))))) : null);
+    const close = dialog(title, "", body, [["Done", "", () => true]]);
+    if (!results || !results.some(r => r.diff)) setTimeout(close, 6000);
+  }
+
+  load();
+})();
+</script>
+</body>
+</html>
