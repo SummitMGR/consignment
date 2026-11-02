@@ -385,10 +385,24 @@ main { flex: 1; overflow: auto; padding: 22px; }
     if (e.key.length === 1) buf += e.key;
   });
 
+  // nothing can be pulled past what's on hand: 0 on hand (or every bottle already in this list) stops the scan
+  function noneLeft(d, extra) {
+    if (!d || d.onHand === null) return false;   // never counted yet: no on-hand number to check against
+    const inList = batch.filter(b => b.drugId === d.id).length;
+    const left = d.onHand - inList;
+    if (left >= (extra || 1)) return false;
+    const msg = d.onHand <= 0 ? `Cannot pull, 0 quantity on hand for ${d.short}.`
+      : `Cannot pull, only ${d.onHand} ${unit(d, d.onHand)} on hand for ${d.short}, and ${inList} ${inList === 1 ? "is" : "are"} already in this list.`;
+    dialog("Cannot pull " + d.short, msg, el("p", { style: { fontSize: ".9rem" }, text: "If more came in, log it first with Receive inventory. If the count is wrong, fix it with the End-of-day count." }),
+      [["OK", "", () => true]]);
+    return true;
+  }
+
   async function scanned(raw) {
     const rx = String(raw || "").trim().toUpperCase().replace(/\s+/g, "");
     if (rx.length < 3) return;
     const d = drugOf(pick); if (!d) return;
+    if (noneLeft(d)) return;
     // the same label again (in this batch, or logged in the last 7 days): ask first
     const inBatch = batch.filter(b => b.rx === rx);
     const logged = (S.history || []).filter(h => h.type === "PULL" && !h.voided && h.rx === rx);
@@ -405,7 +419,7 @@ main { flex: 1; overflow: auto; padding: 22px; }
 
   function changeDrug(b) {
     const body = el("div", { class: "grid2" }, active().map(x => el("button", { class: "dbtn" + (x.id === b.drugId ? " on" : ""), style: cs(color(x.id)),
-      onclick: () => { b.drugId = x.id; close(); render(); toast("Rx " + b.rx + " moved to " + x.short); } }, el("span", { class: "dot" }), x.short)));
+      onclick: () => { if (x.id !== b.drugId && noneLeft(x)) return; b.drugId = x.id; close(); render(); toast("Rx " + b.rx + " moved to " + x.short); } }, el("span", { class: "dot" }), x.short)));
     const close = dialog("Which drug is Rx " + b.rx + "?", "Tap the right one.", body, [["Cancel", "ghost", () => true]]);
   }
 
