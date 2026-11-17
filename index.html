@@ -470,19 +470,23 @@ main { flex: 1; overflow: auto; padding: 22px; }
   let counts = {};
   function count(v) {
     v.append(head("End-of-day count", "Expected = last count + received − pulled."));
-    v.append(steps([["Count each drug in the safe", "now"], ["Type the number (or use − / +)", "now"], ["Press Review & save count", ""]]));
+    v.append(steps([["Count each drug in the safe", "now"], ["Change a number only if it's different", "now"], ["Press Review & save count", ""]]));
     const list = active();
     for (const d of list) {
       const c = color(d.id), val = counts[d.id];
       const st = el("div", { class: "st" });
+      // a blank box means the count matches what's expected (only a drug's first count has to be typed)
       const setSt = () => {
         const n = counts[d.id];
-        if (n === undefined || n === "") { st.className = "st warn"; st.textContent = "Not counted"; return; }
+        if (n === undefined || n === "") {
+          if (d.onHand === null) { st.className = "st warn"; st.textContent = "Type the first count"; return; }
+          st.className = "st ok"; st.textContent = "Matches ✓ (as expected)"; return;
+        }
         if (d.onHand === null) { st.className = "st ok"; st.textContent = "First count: sets the start"; return; }
         const diff = n - d.onHand;
         st.className = "st " + (diff ? "bad" : "ok"); st.textContent = diff ? `Off by ${diff > 0 ? "+" : ""}${diff}` : "Matches ✓";
       };
-      const inp = el("input", { type: "number", min: "0", inputmode: "numeric", value: val === undefined ? "" : val, placeholder: "?",
+      const inp = el("input", { type: "number", min: "0", inputmode: "numeric", value: val === undefined ? "" : val, placeholder: d.onHand === null ? "?" : String(d.onHand),
         oninput: (e) => { counts[d.id] = e.target.value === "" ? "" : Math.max(0, parseInt(e.target.value) || 0); setSt(); } });
       const bump = (k) => { const n = (counts[d.id] === undefined || counts[d.id] === "") ? (d.onHand ?? 0) : counts[d.id]; counts[d.id] = Math.max(0, n + k); inp.value = counts[d.id]; setSt(); };
       setSt();
@@ -494,10 +498,12 @@ main { flex: 1; overflow: auto; padding: 22px; }
         (d.pulls.length || d.receives.length) ? el("div", { class: "more" }, d.pulls.length ? ["Pulled since last count (" + d.pulled + "):", d.pulls.map(p => el("span", { class: "rxp", title: fmtWhen(p.time), text: p.rx }))] : null,
           d.receives.length ? el("span", { text: " · Received " + d.received }) : null) : null));
     }
-    const missing = () => list.filter(d => counts[d.id] === undefined || counts[d.id] === "");
-    v.append(el("div", { class: "bar" }, el("div", { class: "tot", style: { color: "var(--muted)" }, text: "Every drug needs a count before saving." }),
+    const blank = (d) => counts[d.id] === undefined || counts[d.id] === "";
+    const missing = () => list.filter(d => blank(d) && d.onHand === null);
+    v.append(el("div", { class: "bar" }, el("div", { class: "tot", style: { color: "var(--muted)" }, text: "Leave a number blank when it matches what's expected." }),
       el("button", { class: "btn indigo big", onclick: async () => {
-        const m = missing(); if (m.length) { toast("Count " + m.map(d => d.short).join(", ") + " first.", 4500); return; }
+        const m = missing(); if (m.length) { toast("Type the first count for " + m.map(d => d.short).join(", ") + ".", 4500); return; }
+        list.forEach(d => { if (blank(d)) counts[d.id] = d.onHand; });   // blank = counted, matches expected
         const off = list.filter(d => d.onHand !== null && counts[d.id] - d.onHand !== 0);
         const body = el("table", { class: "tbl" }, el("tr", {}, el("th", { text: "Drug" }), el("th", { class: "r", text: "Expected" }), el("th", { class: "r", text: "Counted" }), el("th", { class: "r", text: "" })),
           list.map(d => { const diff = d.onHand === null ? null : counts[d.id] - d.onHand;
